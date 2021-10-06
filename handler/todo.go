@@ -18,6 +18,8 @@ func (h *TODOHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "POST":
 		h.HandlePOST(w, r)
+	case "PUT":
+		h.HandleUPDATE(w, r)
 	default:
 		w.WriteHeader(http.StatusMethodNotAllowed)
 	}
@@ -54,6 +56,28 @@ func (h *TODOHandler) HandlePOST(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (h *TODOHandler) HandleUPDATE(w http.ResponseWriter, r *http.Request) {
+	var todoReq model.UpdateTODORequest
+	err := json.NewDecoder(r.Body).Decode(&todoReq)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	if todoReq.ID == 0 || todoReq.Subject == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	res, err := h.Update(r.Context(), &todoReq)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	err = json.NewEncoder(w).Encode(res)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+	}
+}
+
 // Create handles the endpoint that creates the TODO.
 func (h *TODOHandler) Create(ctx context.Context, req *model.CreateTODORequest) (*model.CreateTODOResponse, error) {
 	todo, err := h.svc.CreateTODO(ctx, req.Subject, req.Description)
@@ -71,8 +95,11 @@ func (h *TODOHandler) Read(ctx context.Context, req *model.ReadTODORequest) (*mo
 
 // Update handles the endpoint that updates the TODO.
 func (h *TODOHandler) Update(ctx context.Context, req *model.UpdateTODORequest) (*model.UpdateTODOResponse, error) {
-	_, _ = h.svc.UpdateTODO(ctx, 0, "", "")
-	return &model.UpdateTODOResponse{}, nil
+	todo, err := h.svc.UpdateTODO(ctx, int64(req.ID), req.Subject, req.Description)
+	if err != nil {
+		return nil, err
+	}
+	return &model.UpdateTODOResponse{TODO: *todo}, nil
 }
 
 // Delete handles the endpoint that deletes the TODOs.
