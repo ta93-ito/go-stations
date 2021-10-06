@@ -2,6 +2,8 @@ package handler
 
 import (
 	"context"
+	"encoding/json"
+	"net/http"
 
 	"github.com/TechBowl-japan/go-stations/model"
 	"github.com/TechBowl-japan/go-stations/service"
@@ -12,6 +14,15 @@ type TODOHandler struct {
 	svc *service.TODOService
 }
 
+func (h *TODOHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case "POST":
+		h.HandlePOST(w, r)
+	default:
+		w.WriteHeader(http.StatusMethodNotAllowed)
+	}
+}
+
 // NewTODOHandler returns TODOHandler based http.Handler.
 func NewTODOHandler(svc *service.TODOService) *TODOHandler {
 	return &TODOHandler{
@@ -19,10 +30,37 @@ func NewTODOHandler(svc *service.TODOService) *TODOHandler {
 	}
 }
 
+// HandlePOST is actual prosess for POST request.
+func (h *TODOHandler) HandlePOST(w http.ResponseWriter, r *http.Request) {
+	var todoReq model.CreateTODORequest
+	err := json.NewDecoder(r.Body).Decode(&todoReq)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	if todoReq.Subject == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	res, err := h.Create(r.Context(), &todoReq)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	err = json.NewEncoder(w).Encode(res)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+	}
+}
+
 // Create handles the endpoint that creates the TODO.
 func (h *TODOHandler) Create(ctx context.Context, req *model.CreateTODORequest) (*model.CreateTODOResponse, error) {
-	_, _ = h.svc.CreateTODO(ctx, "", "")
-	return &model.CreateTODOResponse{}, nil
+	todo, err := h.svc.CreateTODO(ctx, req.Subject, req.Description)
+	if err != nil {
+		return nil, err
+	}
+	return &model.CreateTODOResponse{TODO: *todo}, nil
 }
 
 // Read handles the endpoint that reads the TODOs.
