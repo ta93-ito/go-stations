@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"strconv"
 
 	"github.com/TechBowl-japan/go-stations/model"
 	"github.com/TechBowl-japan/go-stations/service"
@@ -16,10 +17,13 @@ type TODOHandler struct {
 
 func (h *TODOHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
+	// methodにする
 	case "POST":
 		h.HandlePOST(w, r)
 	case "PUT":
 		h.HandleUPDATE(w, r)
+	case "GET":
+		h.HandleGET(w, r)
 	default:
 		w.WriteHeader(http.StatusMethodNotAllowed)
 	}
@@ -78,6 +82,31 @@ func (h *TODOHandler) HandleUPDATE(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (h *TODOHandler) HandleGET(w http.ResponseWriter, r *http.Request) {
+	prevId, err := strconv.Atoi(r.URL.Query().Get("prev_id"))
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	prevId64 := int64(prevId)
+	size, err := strconv.Atoi(r.URL.Query().Get("size"))
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	size64 := int64(size)
+	todoReq := &model.ReadTODORequest{PrevID: prevId64, Size: size64}
+
+	res, err := h.Read(r.Context(), todoReq)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+	}
+	err = json.NewEncoder(w).Encode(res)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+	}
+}
+
 // Create handles the endpoint that creates the TODO.
 func (h *TODOHandler) Create(ctx context.Context, req *model.CreateTODORequest) (*model.CreateTODOResponse, error) {
 	todo, err := h.svc.CreateTODO(ctx, req.Subject, req.Description)
@@ -89,8 +118,11 @@ func (h *TODOHandler) Create(ctx context.Context, req *model.CreateTODORequest) 
 
 // Read handles the endpoint that reads the TODOs.
 func (h *TODOHandler) Read(ctx context.Context, req *model.ReadTODORequest) (*model.ReadTODOResponse, error) {
-	_, _ = h.svc.ReadTODO(ctx, 0, 0)
-	return &model.ReadTODOResponse{}, nil
+	todos, err := h.svc.ReadTODO(ctx, req.PrevID, req.Size)
+	if err != nil {
+		return nil, err
+	}
+	return &model.ReadTODOResponse{TODOs: todos}, nil
 }
 
 // Update handles the endpoint that updates the TODO.
