@@ -82,13 +82,14 @@ func (h *TODOHandler) HandleUPDATE(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *TODOHandler) HandleGET(w http.ResponseWriter, r *http.Request) {
+	// IDとかはIdにする
 	var (
-		prevId int64
+		prevID int64
 		size   int64
 		err    error
 	)
-	if sPrevId := r.URL.Query().Get("prev_id"); sPrevId != "" {
-		prevId, err = strconv.ParseInt(sPrevId, 10, 64)
+	if sPrevID := r.URL.Query().Get("prev_id"); sPrevID != "" {
+		prevID, err = strconv.ParseInt(sPrevID, 10, 64)
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
 			return
@@ -101,11 +102,12 @@ func (h *TODOHandler) HandleGET(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	todoReq := &model.ReadTODORequest{PrevID: prevId, Size: size}
+	todoReq := &model.ReadTODORequest{PrevID: prevID, Size: size}
 
 	res, err := h.Read(r.Context(), todoReq)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
 	err = json.NewEncoder(w).Encode(res)
 	if err != nil {

@@ -54,6 +54,9 @@ func realMain() error {
 	mux.Handle("/healthz", handler.NewHealthzHandler())
 	mux.Handle("/todos", handler.NewTODOHandler(service.NewTODOService(todoDB)))
 
-	http.ListenAndServe(port, mux)
+	err = http.ListenAndServe(port, mux)
+	if err != nil {
+		return err
+	}
 	return nil
 }
