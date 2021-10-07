@@ -17,12 +17,11 @@ type TODOHandler struct {
 
 func (h *TODOHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
-	// methodにする
-	case "POST":
+	case http.MethodPost:
 		h.HandlePOST(w, r)
-	case "PUT":
+	case http.MethodPut:
 		h.HandleUPDATE(w, r)
-	case "GET":
+	case http.MethodGet:
 		h.HandleGET(w, r)
 	default:
 		w.WriteHeader(http.StatusMethodNotAllowed)
