@@ -83,19 +83,26 @@ func (h *TODOHandler) HandleUPDATE(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *TODOHandler) HandleGET(w http.ResponseWriter, r *http.Request) {
-	prevId, err := strconv.Atoi(r.URL.Query().Get("prev_id"))
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		return
+	var (
+		prevId int64
+		size   int64
+		err    error
+	)
+	if sPrevId := r.URL.Query().Get("prev_id"); sPrevId != "" {
+		prevId, err = strconv.ParseInt(sPrevId, 10, 64)
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
 	}
-	prevId64 := int64(prevId)
-	size, err := strconv.Atoi(r.URL.Query().Get("size"))
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		return
+	if sSize := r.URL.Query().Get("size"); sSize != "" {
+		size, err = strconv.ParseInt(sSize, 10, 64)
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
 	}
-	size64 := int64(size)
-	todoReq := &model.ReadTODORequest{PrevID: prevId64, Size: size64}
+	todoReq := &model.ReadTODORequest{PrevID: prevId, Size: size}
 
 	res, err := h.Read(r.Context(), todoReq)
 	if err != nil {

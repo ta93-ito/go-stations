@@ -53,10 +53,13 @@ func (s *TODOService) ReadTODO(ctx context.Context, prevID, size int64) ([]model
 		rows *sql.Rows
 		err  error
 	)
+	if size == 0 {
+		size = 10000
+	}
 	if prevID == 0 {
-		rows, err = s.db.QueryContext(ctx, read, prevID, size)
+		rows, err = s.db.QueryContext(ctx, read, size)
 	} else {
-		rows, err = s.db.QueryContext(ctx, read, prevID, size)
+		rows, err = s.db.QueryContext(ctx, readWithID, prevID, size)
 	}
 	if err != nil {
 		return nil, err
