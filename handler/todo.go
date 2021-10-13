@@ -23,6 +23,8 @@ func (h *TODOHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		h.HandleUPDATE(w, r)
 	case http.MethodGet:
 		h.HandleGET(w, r)
+	case http.MethodDelete:
+		h.HandleDelete(w, r)
 	default:
 		w.WriteHeader(http.StatusMethodNotAllowed)
 	}
@@ -82,7 +84,6 @@ func (h *TODOHandler) HandleUPDATE(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *TODOHandler) HandleGET(w http.ResponseWriter, r *http.Request) {
-	// IDとかはIdにする
 	var (
 		prevID int64
 		size   int64
@@ -108,6 +109,35 @@ func (h *TODOHandler) HandleGET(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
+	}
+	err = json.NewEncoder(w).Encode(res)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+	}
+}
+
+func (h *TODOHandler) HandleDelete(w http.ResponseWriter, r *http.Request) {
+	var todoReq model.DeleteTODORequest
+	err := json.NewDecoder(r.Body).Decode(&todoReq)
+	if err != nil {
+		w.WriteHeader(http.StatusBadGateway)
+		return
+	}
+	if len(todoReq.IDs) == 0 {
+		w.WriteHeader(http.StatusBadGateway)
+		return
+	}
+
+	res, err := h.Delete(r.Context(), &todoReq)
+	if err != nil {
+		switch err.(type) {
+		case model.ErrNotFound:
+			w.WriteHeader(http.StatusNotFound)
+			return
+		default:
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
 	}
 	err = json.NewEncoder(w).Encode(res)
 	if err != nil {
@@ -144,6 +174,9 @@ func (h *TODOHandler) Update(ctx context.Context, req *model.UpdateTODORequest) 
 
 // Delete handles the endpoint that deletes the TODOs.
 func (h *TODOHandler) Delete(ctx context.Context, req *model.DeleteTODORequest) (*model.DeleteTODOResponse, error) {
-	_ = h.svc.DeleteTODO(ctx, nil)
+	err := h.svc.DeleteTODO(ctx, req.IDs)
+	if err != nil {
+		return nil, err
+	}
 	return &model.DeleteTODOResponse{}, nil
 }
