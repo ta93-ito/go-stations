@@ -120,11 +120,11 @@ func (h *TODOHandler) HandleDelete(w http.ResponseWriter, r *http.Request) {
 	var todoReq model.DeleteTODORequest
 	err := json.NewDecoder(r.Body).Decode(&todoReq)
 	if err != nil {
-		w.WriteHeader(http.StatusBadGateway)
+		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 	if len(todoReq.IDs) == 0 {
-		w.WriteHeader(http.StatusBadGateway)
+		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
